@@ -1,0 +1,501 @@
+---
+title: "RTG 2660: Evaluation 2022"
+author: "Sabrina Gado & Lea Hildebrandt"
+format: 
+  pdf:
+    toc: true
+    code-fold: false
+    code-summary: "Show the code"
+    code-overflow: wrap
+    self-contained: true
+execute:
+  echo: false
+editor: visual
+---
+
+# RTG 2660 Approach-Avoidance
+
+## First-year evaluation
+
+A survey was created and distributed in September 2022 by the RTG coordinator and PhD representatives, assessing how satisfied the PhD researchers were with the first year of their PhDs within the RTG. Questions spanned both broader RTG-related topics (atmosphere, organization etc.) and teaching.
+
+```{r setup}
+#| output: false
+ 
+# load packages
+library(tidyverse)
+# install.packages("devtools")
+remotes::install_github("rubenarslan/codebook")
+# library(codebook)
+library(labelled)
+library(likert)
+```
+
+```{r prep-data}
+#| output: false
+
+# load data
+ evals <- read_delim("~/UniWü/RTG2660/RTG_Statistics/Evaluation22/RTG_Eval/data_rtg2660_eval_ss22.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE) %>%
+ filter(!is.na(AC01_01))
+
+ # add items as labels and remove from data
+ eval_labels <- evals[1,]
+ eval_labels_list <- eval_labels %>% as.list(.)
+ evals <- evals[2:nrow(evals),]
+ 
+ # change type of columns
+ evals <- evals %>%  type_convert(.)
+
+ #### add response labels 
+ # helper functions
+ add_likert_labels <- function(x) {
+  val_labels(x) <- c("strongly disagree" = 1, 
+                  "slightly disagree" = 2, 
+                  "neutral" = 3,
+                  "slightly agree" = 4,
+                  "strongly agree" = 5,
+                  "not applicable/no opinion" = -1,
+                  "NA" = 9,
+                  "NA" = -9)
+  x
+ }
+  add_yn_labels <- function(x) {
+  val_labels(x) <- c("yes" = 1, 
+                  "no" = 2,
+                  "NA" = 9)
+  x
+}
+ add_waste_labels <- function(x) {
+  val_labels(x) <- c("waste of time" = 1, 
+                  "bad" = 2, 
+                  "neutral" = 3,
+                  "good" = 4,
+                  "excellent" = 5,
+                  "NA" = 9,
+                  "NA" = -9)
+  x
+ }
+  add_less_labels <- function(x) {
+  val_labels(x) <- c("less" = 1, 
+                  "slightly less" = 2, 
+                  "neutral" = 3,
+                  "slightly more" = 4,
+                  "more" = 5,
+                  "not applicable/no opinion" = -1,
+                  "NA" = 9)
+  x
+ }
+
+ 
+ evals <- evals %>% mutate(across(c(AC01_01:AC05_02, 
+                                    CO01_01:CO05_01, 
+                                    GE02_01:GE02_02,
+                                    JR01_01:JR01_09,
+                                    SQ01_01:SQ02_12,
+                                    SV01_01:SV01_07,
+                                    TE01_01:TE01_05,
+                                    TE05_01:WC03_01,
+                                    WC04_01, WC05_01, WC01_01),
+                                    add_likert_labels),
+                          across(GE06, add_yn_labels),
+                          across(TE05_01, add_waste_labels),
+                          across(AC05_01:AC05_02, add_less_labels))
+ 
+  # add labels from second row
+ var_label(evals) <- eval_labels_list
+ 
+ 
+ #### function for plotting
+ eval_plot <- function(data, labels, variables) {
+    # capture expressions and create quosures
+  cols <- enquos(variables)
+  
+    # get headers/items
+  sub_labels <- labels %>% dplyr::select(!!!cols) %>% gsub(".*:","", .)
+  
+   sub_data <- data %>% 
+     select(!!!cols) %>% 
+     mutate(across(where(is_numeric),as_factor)) %>% 
+     mutate(across(everything(), ~fct_recode(.x,
+                                             NULL = "not applicable/no opinion",
+                                             NULL = "NA"))) %>%
+     
+     # somehow likert plot doesn't work with labels? rename cols
+     setNames(sub_labels)  %>% 
+     # also requires data.frame
+     as.data.frame(.)
+   
+   eval_plot <- plot(likert(items=sub_data), legend.position="bottom") +
+     # theme(legend.key.size = unit(.1, 'cm')) +
+     guides(fill=guide_legend(title=NULL)) +
+     theme(legend.justification = "right")
+   
+   eval_plot
+   
+ }
+```
+
+
+This evaluation was filled in by `r nrow(evals)` PhD students of the RTG 2660. Approximately half of those were funded by the RTG, the other half is associated.
+
+```{r associated}
+#| warning: false
+
+ggplot(evals, aes(x="", fill=factor(GE06))) +
+  geom_bar(stat="count", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() +
+  scale_fill_manual(values = c("#00AB9C", "#B98E45", "grey"), name = "Associated?", labels = c("yes", "funded", NA)) 
+```
+
+## General
+
+We asked questions assessing both broader categories, such as the PhD researcher's general impressions of the RTG, as well as specific categories such as teaching.
+
+In general, the PhD researchers are happy to be part of the RTG and would recommend the RTG to others
+
+```{r plot-general}
+#| warning: false
+
+eval_plot(evals, eval_labels, GE02_01:GE02_02)
+```
+
+We also asked some open question for each category.
+
+The general feedback is very broad. An important point is the wish that PIs should participate in the Jour Fixe. The PhDs also would like to have the animal research represented better.
+
+> **General Feedback:**
+
+```{r openq-general}
+#| results: asis
+
+evals %>%
+  select(GE03_01) %>%
+  filter(!is.na(GE03_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+> **Maintain:**
+
+```{r openq-general-2}
+#| results: asis
+
+evals %>%
+  select(GE04_01) %>%
+  filter(!is.na(GE04_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+## Atmosphere
+
+We asked the PhD researchers for their general impression of the atmosphere within the RTG.
+
+The responses show that PhD researchers generally appreciate the atmosphere but would like to have more (non-scientific) events organized for informal encounters.  
+
+It thus seems like the PhD researchers would like to have *more (leisure) events offered* by the RTG. (However, during the PhD Assembly, the time pressure was also mentioned as a reason not to attend too many events, which should be taken into account.)
+
+```{r plot-atmosphere}
+#| warning: false
+
+eval_plot(evals, eval_labels, AC01_01:AC01_03)
+
+```
+
+> **Atmosphere: I would wish for...**
+
+```{r openq-atmosphere}
+#| results: asis
+
+evals %>%
+  select(AC02_01) %>%
+  filter(!is.na(AC02_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+
+
+## Communication
+
+The communication within the RTG is rated as being inclusive and support when conflicts arise is satisfying.
+
+Public (science) communication is alright, but less personal information should be shared online.
+
+The question arises whether the information on the website is meant here or e.g. the introductions on Twitter. *This is a point for further investigation and increased sensitivity.*
+
+```{r plot-communication}
+#| warning: false
+
+ac2 <- eval_plot(evals, eval_labels, AC04_01:AC04_05)
+ac2
+
+ac3 <- eval_plot(evals, eval_labels, AC05_01:AC05_02)
+ac3
+```
+
+> **Communication: I would wish for...**
+
+
+
+```{r openq-communication}
+#| results: asis
+
+evals %>%
+  select(AC06_01) %>%
+  filter(!is.na(AC06_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+## Organization
+
+PhD students are in general very satisfied with the organization and have the impression that they are heard. The time pressure is also addressed. However, it is a bit unclear to ~ half what exactly is expected from them to obtain their PhDs. *This is likely due to it depending on the RTG's requirements, the GSlS and of course the supervisor's expectancies.*  
+
+```{r plot-organization}
+#| warning: false
+
+eval_plot(evals, eval_labels, CO01_01:CO05_01)
+
+```
+
+> **Organization: I would wish for...**
+
+```{r openq-organization}
+#| results: asis
+
+evals %>%
+  select(CO03_01) %>%
+  filter(!is.na(CO03_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+## Skills
+
+
+```{r plot-skillsoffer}
+#| warning: false
+
+eval_plot(evals, eval_labels, SQ01_01:SQ01_04)
+
+```
+
+```{r plot-skillsoutcome}
+#| warning: false
+
+eval_plot(evals, eval_labels, SQ02_01:SQ02_12)
+
+
+```
+
+> **Skills: I wish for...**
+
+```{r openq-skills}
+#| results: asis
+
+evals %>%
+  select(SQ03_01) %>%
+  filter(!is.na(SQ03_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+## Supervision
+
+```{r plot-jsupervision}
+#| warning: false
+
+eval_plot(evals, eval_labels, SV01_01:SV01_07)
+
+```
+
+> **Supervision: I wish for...**
+
+```{r openq-supervision}
+#| results: asis
+
+evals %>%
+  select(SV02_01) %>%
+  filter(!is.na(SV02_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+## Jour Fixe
+
+```{r plot-jourfixe}
+#| warning: false
+
+eval_plot(evals, eval_labels, JR01_01:JR01_09)
+
+```
+
+> **Jour Fixe: I wish for...**
+
+```{r openq-jourfixe}
+#| results: asis
+
+evals %>%
+  select(JR02_01) %>%
+  filter(!is.na(JR02_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+## Teaching
+
+```{r plot-teaching}
+#| warning: false
+
+eval_plot(evals, eval_labels, TE01_01:TE01_05)
+
+```
+
+> **Teaching: I would wish for...**
+
+```{r openq-teaching}
+#| results: asis
+
+evals %>%
+  select(TE02_01) %>%
+  filter(!is.na(TE02_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+> **Teaching: My favorite seminar sessions were the sessions by...**
+
+```{r openq-teaching-favsem}
+#| results: asis
+
+evals %>%
+  select(TE03_01, TE03_02) %>%
+  filter(!is.na(TE03_01)) %>% 
+  unite("combi", TE03_01:TE03_02, sep = ", because: ", remove = TRUE, na.rm = TRUE) %>%
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+> **Teaching: This seminar could be improved...**
+
+```{r openq-teaching-badsem}
+#| results: asis
+
+evals %>%
+  select(TE04_01, TE04_02) %>%
+  filter(!is.na(TE04_01)) %>% 
+   unite("combi", TE04_01:TE04_02, sep = ", particularly in terms of: ", remove = TRUE, na.rm = TRUE) %>%
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+```{r plot-teaching2}
+#| warning: false
+
+eval_plot(evals, eval_labels, TE05_01)
+
+```
+
+## Working Conditions
+
+```{r plot-workcond}
+#| warning: false
+
+eval_plot(evals, eval_labels, c(WC03_01, WC04_01, WC05_01, WC01_01))
+
+
+```
+
+> **Office: I would like to change...**
+
+```{r openq-wc-office}
+#| results: asis
+
+evals %>%
+  select(WC02_01) %>%
+  filter(!is.na(WC02_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+> **Home Office: I would like to change...**
+
+```{r openq-wc-ho}
+#| results: asis
+
+evals %>%
+  select(WC06_01) %>%
+  filter(!is.na(WC06_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+> **Lab : I would like to change...**
+
+```{r openq-wc-lab}
+#| results: asis
+
+evals %>%
+  select(WC07_01) %>%
+  filter(!is.na(WC07_01)) %>% 
+  #mutate(AC02_01 = replace_na(AC02_01, "-")) %>% 
+  unlist() %>%
+  unname() %>% 
+  { str_c("- ", ., "  \n") } %>%
+  cat()
+
+```
+
+## 
