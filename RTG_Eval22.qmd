@@ -135,7 +135,6 @@ library(likert)
  }
 ```
 
-
 This evaluation was filled in by `r nrow(evals)` PhD students of the RTG 2660. Approximately half of those were funded by the RTG, the other half is associated.
 
 ```{r associated}
@@ -200,7 +199,7 @@ evals %>%
 
 We asked the PhD researchers for their general impression of the atmosphere within the RTG.
 
-The responses show that PhD researchers generally appreciate the atmosphere but would like to have more (non-scientific) events organized for informal encounters.  
+The responses show that PhD researchers generally appreciate the atmosphere but would like to have more (non-scientific) events organized for informal encounters.
 
 It thus seems like the PhD researchers would like to have *more (leisure) events offered* by the RTG. (However, during the PhD Assembly, the time pressure was also mentioned as a reason not to attend too many events, which should be taken into account.)
 
@@ -227,8 +226,6 @@ evals %>%
 
 ```
 
-
-
 ## Communication
 
 The communication within the RTG is rated as being inclusive and support when conflicts arise is satisfying.
@@ -249,8 +246,6 @@ ac3
 
 > **Communication: I would wish for...**
 
-
-
 ```{r openq-communication}
 #| results: asis
 
@@ -267,7 +262,7 @@ evals %>%
 
 ## Organization
 
-PhD students are in general very satisfied with the organization and have the impression that they are heard. The time pressure is also addressed. However, it is a bit unclear to ~ half what exactly is expected from them to obtain their PhDs. *This is likely due to it depending on the RTG's requirements, the GSlS and of course the supervisor's expectancies.*  
+PhD students are in general very satisfied with the organization and have the impression that they are heard. The time pressure is also addressed. However, it is a bit unclear to \~ half what exactly is expected from them to obtain their PhDs. *This is likely due to it depending on the RTG's requirements, the GSlS and of course the supervisor's expectancies.*
 
 ```{r plot-organization}
 #| warning: false
@@ -293,7 +288,6 @@ evals %>%
 ```
 
 ## Skills
-
 
 ```{r plot-skillsoffer}
 #| warning: false
